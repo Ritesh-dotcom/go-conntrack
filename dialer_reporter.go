@@ -5,6 +5,7 @@ package conntrack
 
 import (
 	"context"
+	"log"
 	"net"
 	"os"
 	"syscall"
@@ -85,6 +86,7 @@ func reportDialerConnClosed(dialerName string) {
 }
 
 func reportDialerConnFailed(dialerName string, err error) {
+	log.Println("Dialer connection failed:", err.Error())
 	if netErr, ok := err.(*net.OpError); ok {
 		switch nestErr := netErr.Err.(type) {
 		case *net.DNSError:
@@ -94,6 +96,7 @@ func reportDialerConnFailed(dialerName string, err error) {
 			if nestErr.Err == syscall.ECONNREFUSED {
 				dialerConnFailedTotal.WithLabelValues(dialerName, string(failedConnRefused)).Inc()
 			}
+			log.Println("Dialer connection failed with syscall error:", nestErr.Err.Error())
 			dialerConnFailedTotal.WithLabelValues(dialerName, string(failedUnknown)).Inc()
 			return
 		}
