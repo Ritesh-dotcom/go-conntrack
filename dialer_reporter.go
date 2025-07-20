@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"reflect"
 	"syscall"
 
 	prom "github.com/prometheus/client_golang/prometheus"
@@ -86,7 +87,6 @@ func reportDialerConnClosed(dialerName string) {
 }
 
 func reportDialerConnFailed(dialerName string, err error) {
-	log.Println("Dialer connection failed:", err.Error())
 	if netErr, ok := err.(*net.OpError); ok {
 		switch nestErr := netErr.Err.(type) {
 		case *net.DNSError:
@@ -96,7 +96,7 @@ func reportDialerConnFailed(dialerName string, err error) {
 			if nestErr.Err == syscall.ECONNREFUSED {
 				dialerConnFailedTotal.WithLabelValues(dialerName, string(failedConnRefused)).Inc()
 			}
-			log.Println("Dialer connection failed with syscall error:", nestErr.Err.Error())
+			log.Printf("os.Syscall Dialer connection error: %v, Dialer error type: %v", err.Error(), reflect.TypeOf(err))
 			dialerConnFailedTotal.WithLabelValues(dialerName, string(failedUnknown)).Inc()
 			return
 		}
@@ -107,5 +107,6 @@ func reportDialerConnFailed(dialerName string, err error) {
 		dialerConnFailedTotal.WithLabelValues(dialerName, string(failedTimeout)).Inc()
 		return
 	}
+	log.Printf("Dialer connection error: %v, Dialer error type: %v", err.Error(), reflect.TypeOf(err))
 	dialerConnFailedTotal.WithLabelValues(dialerName, string(failedUnknown)).Inc()
 }
